@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Token Notification</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/admin.png">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="form-container">
+        <h2>Admin Panel - Push Notifications</h2>
+
+        <!-- Token Fetching Section -->
+        <div class="section-title">Fetch Tokens</div>
+        <div class="input-group">
+            <input type="email" id="emailInput" placeholder="Enter email to fetch token">
+            <button id="fetchByEmailBtn">Fetch Token</button>
+            <button id="fetchAllBtn">Get All Tokens</button>
+            <button id="clearBtn">Clear</button>
+        </div>
+
+        <!-- Tokens Display Section -->
+        <div class="tokens-section">
+            <div class="section-title">Available Tokens</div>
+            <div id="tokenList">
+                <div class="empty-state">No tokens loaded. Use the buttons above to fetch tokens.</div>
+            </div>
+
+            <div class="select-all-container">
+                <input type="checkbox" id="selectAll">
+                <label for="selectAll">Select All Tokens</label>
+            </div>
+        </div>
+
+        <!-- Notification Input Section -->
+        <div class="notification-inputs">
+            <div class="section-title">Notification Details</div>
+            <div class="input-group">
+                <input type="text" id="titleInput" placeholder="Enter notification title">
+            </div>
+            <div class="input-group">
+                <textarea id="bodyInput" placeholder="Enter notification message"></textarea>
+            </div>
+            <button id="sendBtn">Send Notification</button>
+        </div>
+    </div>
+
+    <!-- Custom Alert -->
+    <div id="customAlert" class="alert"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
