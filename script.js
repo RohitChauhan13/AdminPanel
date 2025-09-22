@@ -212,7 +212,7 @@ sendBtn.addEventListener('click', async () => {
         return;
     }
 
-    // Prepare selected tokens and emails
+    // Prepare selected tokens and emails properly
     const selectedData = Array.from(selectedCheckboxes).map(checkbox => {
         const index = parseInt(checkbox.value);
         const tokenInfo = tokenData[index];
@@ -222,21 +222,23 @@ sendBtn.addEventListener('click', async () => {
         };
     });
 
-    // Get unique emails (in case multiple tokens have same email)
-    const uniqueEmails = [...new Set(selectedData.map(item => item.email))];
+    // Extract all tokens and emails (maintaining the mapping)
     const tokens = selectedData.map(item => item.token);
+    const emails = selectedData.map(item => item.email);
 
     sendBtn.disabled = true;
     sendBtn.textContent = 'Sending...';
 
     try {
-        // Prepare payload based on whether we have single or multiple tokens
+        // Send both tokens and emails as arrays to maintain proper mapping
         const payload = {
-            token: tokens.length === 1 ? tokens[0] : tokens,
-            email: uniqueEmails.length === 1 ? uniqueEmails[0] : uniqueEmails[0], // Use first email as primary
+            token: tokens,  // Array of all selected tokens
+            email: emails,  // Array of corresponding emails 
             title,
             body
         };
+
+        console.log('Sending payload:', payload); // Debug log
 
         const res = await fetch('https://rohitsbackend.onrender.com/send-notification', {
             method: 'POST',
@@ -249,7 +251,8 @@ sendBtn.addEventListener('click', async () => {
         const data = await res.json();
 
         if (data.success) {
-            showAlert(`Notification sent successfully to ${selectedCheckboxes.length} recipient(s)`, 'success');
+            const uniqueEmailCount = [...new Set(emails)].length;
+            showAlert(`Notification sent successfully to ${uniqueEmailCount} user(s) with ${tokens.length} token(s)`, 'success');
 
             // Clear form
             titleInput.value = '';
@@ -261,7 +264,7 @@ sendBtn.addEventListener('click', async () => {
             selectAllCheckbox.checked = false;
             selectAllCheckbox.indeterminate = false;
         } else {
-            showAlert(data.message || "Failed to send notification", 'error');
+            showAlert(data.error || data.message || "Failed to send notification", 'error');
         }
     } catch (err) {
         console.error('Error sending notification:', err);
