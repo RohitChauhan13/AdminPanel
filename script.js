@@ -10,6 +10,9 @@ const bodyInput = document.getElementById('bodyInput');
 const sendBtn = document.getElementById('sendBtn');
 const customAlert = document.getElementById('customAlert');
 
+// Store token data with email information
+let tokenData = [];
+
 // Custom alert function
 function showAlert(message, type = 'success') {
     customAlert.textContent = message;
@@ -25,23 +28,38 @@ function showAlert(message, type = 'success') {
 function clearTokens() {
     tokenListDiv.innerHTML = '<div class="empty-state">No tokens loaded. Use the buttons above to fetch tokens.</div>';
     selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+    tokenData = [];
 }
 
-// Display tokens
+// Format date for display
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+// Display tokens with email information
 function displayTokens(tokens) {
     tokenListDiv.innerHTML = '';
+    tokenData = tokens;
 
     if (tokens.length === 0) {
         tokenListDiv.innerHTML = '<div class="empty-state">No tokens found.</div>';
         return;
     }
 
-    tokens.forEach(token => {
+    tokens.forEach((tokenInfo, index) => {
         const div = document.createElement('div');
         div.className = 'token-item';
+
         div.innerHTML = `
-            <input type="checkbox" class="tokenCheckbox" value="${token}"> 
-            <span>${token}</span>
+            <input type="checkbox" class="tokenCheckbox" value="${index}" data-token="${tokenInfo.token}" data-email="${tokenInfo.email || 'No email'}">
+            <div class="token-info">
+                <div class="token-email">${tokenInfo.email || 'No email provided'}</div>
+                <div class="token-value">${tokenInfo.token}</div>
+                ${tokenInfo.created_at ? `<div class="token-created">Created: ${formatDate(tokenInfo.created_at)}</div>` : ''}
+            </div>
         `;
         tokenListDiv.appendChild(div);
     });
@@ -73,6 +91,15 @@ fetchByEmailBtn.addEventListener('click', async () => {
     const email = emailInput.value.trim();
     if (!email) {
         showAlert("Please enter an email", 'warning');
+        emailInput.focus();
+        return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert("Please enter a valid email address", 'warning');
+        emailInput.focus();
         return;
     }
 
@@ -86,7 +113,13 @@ fetchByEmailBtn.addEventListener('click', async () => {
         const data = await res.json();
 
         if (data.success && data.token) {
-            displayTokens([data.token.token]); // Wrap single token in array
+            // Wrap single token in array with email info
+            const tokenInfo = {
+                token: data.token.token,
+                email: email,
+                created_at: data.token.created_at
+            };
+            displayTokens([tokenInfo]);
             showAlert(`Found token for ${email}`, 'success');
         } else {
             displayTokens([]);
@@ -95,6 +128,7 @@ fetchByEmailBtn.addEventListener('click', async () => {
     } catch (err) {
         console.error('Error fetching token:', err);
         showAlert("Error fetching token. Please try again.", 'error');
+        displayTokens([]);
     } finally {
         fetchByEmailBtn.disabled = false;
         fetchByEmailBtn.textContent = 'Fetch Token';
@@ -113,9 +147,15 @@ fetchAllBtn.addEventListener('click', async () => {
         const data = await res.json();
 
         if (data.success && data.tokens && data.tokens.length > 0) {
-            const tokens = data.tokens.map(t => t.token);
-            displayTokens(tokens);
-            showAlert(`Loaded ${tokens.length} total tokens`, 'success');
+            // Map tokens to include email info
+            const tokensWithInfo = data.tokens.map(tokenInfo => ({
+                token: tokenInfo.token,
+                email: tokenInfo.email || 'No email',
+                created_at: tokenInfo.created_at
+            }));
+
+            displayTokens(tokensWithInfo);
+            showAlert(`Loaded ${tokensWithInfo.length} total tokens`, 'success');
         } else {
             displayTokens([]);
             showAlert("No tokens found", 'warning');
@@ -123,6 +163,7 @@ fetchAllBtn.addEventListener('click', async () => {
     } catch (err) {
         console.error('Error fetching all tokens:', err);
         showAlert("Error fetching all tokens. Please try again.", 'error');
+        displayTokens([]);
     } finally {
         fetchAllBtn.disabled = false;
         fetchAllBtn.textContent = 'Get All Tokens';
@@ -136,6 +177,7 @@ clearBtn.addEventListener('click', () => {
     titleInput.value = '';
     bodyInput.value = '';
     showAlert("Cleared all data", 'success');
+    emailInput.focus();
 });
 
 // Select all checkbox
@@ -153,27 +195,45 @@ document.addEventListener('change', (e) => {
 
 // Send notification
 sendBtn.addEventListener('click', async () => {
-    const selectedTokens = Array.from(document.querySelectorAll('.tokenCheckbox:checked'))
-        .map(cb => cb.value);
+    const selectedCheckboxes = document.querySelectorAll('.tokenCheckbox:checked');
     const title = titleInput.value.trim();
     const body = bodyInput.value.trim();
 
+    // Validation
     if (!title || !body) {
         showAlert("Please enter both title and message", 'warning');
+        if (!title) titleInput.focus();
+        else bodyInput.focus();
         return;
     }
 
-    if (selectedTokens.length === 0) {
+    if (selectedCheckboxes.length === 0) {
         showAlert("Please select at least one token", 'warning');
         return;
     }
+
+    // Prepare selected tokens and emails
+    const selectedData = Array.from(selectedCheckboxes).map(checkbox => {
+        const index = parseInt(checkbox.value);
+        const tokenInfo = tokenData[index];
+        return {
+            token: tokenInfo.token,
+            email: tokenInfo.email
+        };
+    });
+
+    // Get unique emails (in case multiple tokens have same email)
+    const uniqueEmails = [...new Set(selectedData.map(item => item.email))];
+    const tokens = selectedData.map(item => item.token);
 
     sendBtn.disabled = true;
     sendBtn.textContent = 'Sending...';
 
     try {
+        // Prepare payload based on whether we have single or multiple tokens
         const payload = {
-            token: selectedTokens.length === 1 ? selectedTokens[0] : selectedTokens,
+            token: tokens.length === 1 ? tokens[0] : tokens,
+            email: uniqueEmails.length === 1 ? uniqueEmails[0] : uniqueEmails[0], // Use first email as primary
             title,
             body
         };
@@ -189,11 +249,13 @@ sendBtn.addEventListener('click', async () => {
         const data = await res.json();
 
         if (data.success) {
-            showAlert(`Notification sent successfully to ${selectedTokens.length} recipient(s)`, 'success');
+            showAlert(`Notification sent successfully to ${selectedCheckboxes.length} recipient(s)`, 'success');
 
+            // Clear form
             titleInput.value = '';
             bodyInput.value = '';
 
+            // Uncheck all checkboxes
             const allCheckboxes = document.querySelectorAll('.tokenCheckbox');
             allCheckboxes.forEach(cb => cb.checked = false);
             selectAllCheckbox.checked = false;
@@ -217,8 +279,22 @@ emailInput.addEventListener('keypress', (e) => {
     }
 });
 
+// Enable Enter key for title and body inputs
+titleInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        bodyInput.focus();
+    }
+});
+
+bodyInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendBtn.click();
+    }
+});
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Token Notification Admin Panel loaded');
+    clearTokens();
     emailInput.focus();
 });

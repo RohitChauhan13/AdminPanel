@@ -4,55 +4,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Token Notification</title>
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/admin.png">
-
+    <title>Admin Panel</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="form-container">
-        <h2>Admin Panel - Push Notifications</h2>
+    <div class="container">
+        <h2>Admin Panel - Notifications</h2>
 
-        <!-- Token Fetching Section -->
-        <div class="section-title">Fetch Tokens</div>
-        <div class="input-group">
-            <input type="email" id="emailInput" placeholder="Enter email to fetch token">
+        <!-- Custom Alert -->
+        <div id="customAlert" class="alert" style="display: none;"></div>
+
+        <!-- Fetch Section -->
+        <div class="fetch-section">
+            <input type="email" id="emailInput" placeholder="Enter email to fetch specific token">
             <button id="fetchByEmailBtn">Fetch Token</button>
             <button id="fetchAllBtn">Get All Tokens</button>
-            <button id="clearBtn">Clear</button>
+            <button id="clearBtn" class="clear-btn">Clear</button>
         </div>
 
-        <!-- Tokens Display Section -->
-        <div class="tokens-section">
-            <div class="section-title">Available Tokens</div>
-            <div id="tokenList">
-                <div class="empty-state">No tokens loaded. Use the buttons above to fetch tokens.</div>
-            </div>
-
-            <div class="select-all-container">
-                <input type="checkbox" id="selectAll">
-                <label for="selectAll">Select All Tokens</label>
-            </div>
-        </div>
-
-        <!-- Notification Input Section -->
-        <div class="notification-inputs">
-            <div class="section-title">Notification Details</div>
-            <div class="input-group">
-                <input type="text" id="titleInput" placeholder="Enter notification title">
-            </div>
-            <div class="input-group">
-                <textarea id="bodyInput" placeholder="Enter notification message"></textarea>
-            </div>
+        <!-- Notification Section -->
+        <div class="notification-section">
+            <input type="text" id="titleInput" placeholder="Notification Title">
+            <input type="text" id="bodyInput" placeholder="Notification Body">
             <button id="sendBtn">Send Notification</button>
         </div>
-    </div>
 
-    <!-- Custom Alert -->
-    <div id="customAlert" class="alert"></div>
+        <!-- Token List Header -->
+        <div class="token-list-header">
+            <input type="checkbox" id="selectAll">
+            <label for="selectAll">Select All</label>
+        </div>
+
+        <!-- Token List -->
+        <div id="tokenList" class="token-list">
+            <div class="empty-state">No tokens loaded. Use the buttons above to fetch tokens.</div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
